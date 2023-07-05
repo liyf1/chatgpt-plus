@@ -1,5 +1,7 @@
 # chatgpt-plus
 
+To English Doc -> [English Doc](README_EN.md)
+
 # 📖 项目简介
 
 **ChatGPT自定义插件的客户端**
