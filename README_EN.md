@@ -1,65 +1,79 @@
-# ChatGPT-Plus
+# chatgpt-plus
 
-## 📖 Project Overview
+To English Doc -> [English Doc](README_EN.md)
 
-**ChatGPT Custom Plugin Client**
+# 📖 Project Introduction
 
-#### This project is the full version of Open AI ChatGPT Plus. It provides additional capabilities on top of the official chatgpt, such as daily news, weather, oil prices, stock market queries, and more. The project is developed based on OPEN AI's function invocation and comes with some pre-built plugins (continuously updated) while also supporting developers to add their own custom plugins. The project supports both streaming and non-streaming calls.
+**Client for Custom Plugins in ChatGPT**
 
-## 🚩 Features
+#### This project is the full version of ChatGPT Plus based on OpenAI's official ChatGPT. It provides additional capabilities such as querying daily news, weather, oil prices, stock markets, and more. The project is developed using OPEN AI's functional invocation and currently includes some built-in plugins (with continuous updates). It also supports developers to add their own custom plugins. The project supports both streaming and non-streaming invocations.
+
+# 🚩 Features
 #### Non-streaming output:
-![Non-streaming Output](https://github.com/liyf1/chatgpt-plus/assets/49024327/3bc7589c-3324-4dcd-addf-3de53aa9313f)
-![Non-streaming Output](https://github.com/liyf1/chatgpt-plus/assets/49024327/1e91215e-8263-4135-a21e-ca6e9dc40c81)
+<img width="600" alt="image" src="https://github.com/liyf1/chatgpt-plus/assets/49024327/3bc7589c-3324-4dcd-addf-3de53aa9313f">
+<img width="433" alt="image" src="https://github.com/liyf1/chatgpt-plus/assets/49024327/1e91215e-8263-4135-a21e-ca6e9dc40c81">
+
 
 #### Streaming output:
-![Streaming Output](https://github.com/liyf1/chatgpt-plus/assets/49024327/9e6edb67-92ac-4fbe-8371-66bffb15bcc6)
+<img width="433" alt="image" src="https://github.com/liyf1/chatgpt-plus/assets/49024327/9e6edb67-92ac-4fbe-8371-66bffb15bcc6">
 
-### Current built-in plugins:
-- [x] Current time query
-- [x] Mid-journey image generation
-- [x] City weather query
-- [x] News query
-- [x] Email sending
+### Currently Built-in Plugins:
+- [✅] Current time query
+- [✅] Mid-journey image generation
+- [✅] City weather query
+- [✅] News query
+- [✅] Email sending
+- [✅] Weibo hot search
+- [✅] Baidu search 
+- [✅] Baidu Baike 
 - .
 - .
 - .
--   Continuously updated
+-   More plugins are continuously being updated
 
-## 🚀 Quick Start
-### I. Local Setup
+# 🚀 Quick Start
+### 1. Local Launch
 
-Project requirements: JDK 17+
-##### Environment variables
+Project Environment Requirements: JDK 17+
+##### Environment Variables
 
 ```
-## Refers to the mid-journey proxy project, you need to start the mid-journey project separately and include its startup address here
+## This project references the mid-journey proxy project and requires starting the mid-journey project separately. Replace the service URL once it is started.
+
 mj.service.url = http://ip:port
 
-## chatgpt api key
+## ChatGPT API Key
 chatgpt.api.key = sk-xxxxx
 
-## Email sending configuration
+## Email sending configuration information
 mail.host = smtp.xx.com
 mail.port = 465
 mail.username = xxxx@xx.com
 mail.password = xxxxxxx
 mail.subject = AI Chatbot
 
-## City weather query uses the Baidu Cloud API, you need to apply for a Baidu Cloud account, create an application, and obtain the accessKey and secretKey, https://apis.baidu.com/store/detail/d031401a-4081-4572-8dd7-aca64223197e
+## The weather query uses Baidu Smart Cloud's API. You need to apply for a Baidu Smart Cloud account, create an application, and obtain the accessKey and secretKey. Refer to https://apis.baidu.com/store/detail/d031401a-4081-4572-8dd7-aca64223197e
 baidu.weather.accessKey = 
 baidu.weather.secretKey = 
 
-## News query uses the Juhe Data API, you need to apply for a Juhe Data account, create an application, and obtain the key, https://www.juhe.cn/docs/api/id/235
+## The news query uses Juhe Data's API. You need to apply for a Juhe Data account, create an application, and obtain the key. Refer to https://www.juhe.cn/docs/api/id/235
 juhe.news.key =
+
+## Dynamic IP retrieval is used in the project to fetch real-time data. If you want to use features like Baidu Weibo, configure the following. I used this product: https://www.kuaidaili.com/doc/product/dps/#fetchtypeip
+proxy.ip.signature = 
+proxy.ip.secretId = 
+
+## Interface authorization. Once configured, the request must include the token; otherwise, authentication will fail.
+chatgpt.api.token = 123456
+
+server.port = 15600
 ```
 
-### II. Docker Setup
-Docker setup is not yet supported but will be available soon.
+### 2. Docker Launch
+Docker launch is not supported yet, but it will be supported soon.
 
-## 🙏 Acknowledgements
-The project depends on the code from amazing contributors, and I would like to express my gratitude 🌹:
+# 🙏 Acknowledgements
+This project relies on the code provided by these great developers. A big thank you to them! 🌹:
 - OpenAi: https://openai.com/
 - chatgpt-java: https://github.com/Grt1228/chatgpt-java
-- midjourney-proxy: https://github.com/novicezk/midjourney-proxy (Indirect dependency in this project, if you want image generation, please start this project separately)
-
-Translated into English, without changing the style.
+- midjourney-proxy: https://github.com/novicezk/midjourney-proxy (Used indirectly in this project. If you want to generate images, please start this project separately.)
