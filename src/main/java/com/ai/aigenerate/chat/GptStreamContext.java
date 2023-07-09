@@ -1,6 +1,5 @@
 package com.ai.aigenerate.chat;
 
-import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.OpenAiStreamClient;
 import com.unfbx.chatgpt.entity.chat.ChatCompletion;
 import com.unfbx.chatgpt.entity.chat.Message;

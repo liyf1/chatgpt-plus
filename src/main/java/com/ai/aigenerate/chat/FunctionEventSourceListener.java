@@ -27,10 +27,13 @@ public class FunctionEventSourceListener extends EventSourceListener {
 
     private ChatChoice chatChoice;
 
+    private Boolean isResponse;
+
     public FunctionEventSourceListener(SseEmitter sseEmitter) {
         this.countDownLatch = new CountDownLatch(1);
         this.sseEmitter = sseEmitter;
         chatChoice = null;
+        isResponse = false;
     }
 
     @Override
@@ -46,10 +49,10 @@ public class FunctionEventSourceListener extends EventSourceListener {
         log.info("OpenAI返回数据：{}", data);
         if (data.equals("[DONE]")) {
             log.info("OpenAI返回数据结束了");
-            sseEmitter.send(SseEmitter.event()
-                    .id("[DONE]")
-                    .data("[DONE]")
-                    .reconnectTime(3000));
+            if (isResponse) {
+                sseEmitter.send(SseEmitter.event()
+                        .data("[DONE]"));
+            }
             countDownLatch.countDown();
             log.info("OpenAI返回数据结束了");
             return;
@@ -64,16 +67,17 @@ public class FunctionEventSourceListener extends EventSourceListener {
                 chatChoice.getDelta().getFunctionCall().setArguments(args);
             }
         }else {
-            try {
-                sseEmitter.send(SseEmitter.event()
-                    .id(chatCompletionResponse.getId())
-                    .data(data)
-                    .reconnectTime(3000));
+            if (chatCompletionResponse.getChoices().get(0).getDelta().getContent() != null) {
+                isResponse = true;
+                try {
+                    sseEmitter.send(SseEmitter.event()
+                            .data(data));
                 } catch (Exception e) {
                     log.error("sse信息推送失败！");
                     eventSource.cancel();
                     e.printStackTrace();
                 }
+            }
         }
     }
 

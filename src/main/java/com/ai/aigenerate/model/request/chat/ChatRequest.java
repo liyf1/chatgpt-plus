@@ -27,4 +27,8 @@ public class ChatRequest {
 
     private List<String> functionNameList;
 
+    private List<FunctionDefinition> functionDefinitionList;
+
+    private String token;
+
 }
