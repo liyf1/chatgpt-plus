@@ -7,7 +7,6 @@ import com.unfbx.chatgpt.entity.chat.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 @Slf4j
 public abstract class AbstractGptFunctionHandler<T> implements GptFunctionService<T> {

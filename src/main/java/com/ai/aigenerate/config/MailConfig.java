@@ -8,18 +8,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class MailConfig {
 
-    @Value("${mail.password}")
+    @Value("${mail.password:}")
     private String password;
 
-    @Value("${mail.port}")
+    @Value("${mail.port:}")
     private String port;
 
-    @Value("${mail.username}")
+    @Value("${mail.username:}")
     private String username;
 
-    @Value("${mail.host}")
+    @Value("${mail.host:}")
     private String host;
 
-    @Value("${mail.subject}")
+    @Value("${mail.subject:}")
     private String subject;
 }

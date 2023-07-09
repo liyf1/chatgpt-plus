@@ -3,6 +3,7 @@ package com.ai.aigenerate.chat;
 import com.ai.aigenerate.config.GptFunctionConfig;
 import com.ai.aigenerate.model.request.chat.ChatRequest;
 import com.ai.aigenerate.model.response.chat.ChatResponse;
+import com.ai.aigenerate.model.response.chat.FunctionResponse;
 import com.ai.aigenerate.utils.MdcUtil;
 import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.OpenAiStreamClient;
@@ -17,10 +18,10 @@ import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -84,7 +85,7 @@ public class ChatService {
             ChatCompletion chatCompletion = ChatCompletion
                     .builder()
                     .messages(messages)
-                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():2048)
+                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():8000)
                     .temperature(chatRequest.getTemperature() != null?chatRequest.getTemperature():0.2)
                     .topP(chatRequest.getTopP() != null?chatRequest.getTopP():1.0)
                     .n(chatRequest.getN() != null?chatRequest.getN():1)
@@ -160,7 +161,7 @@ public class ChatService {
                 }
         );
         try {
-            sseEmitter.send(SseEmitter.event().reconnectTime(5000));
+            sseEmitter.send(SseEmitter.event());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -188,7 +189,7 @@ public class ChatService {
                     .n(chatRequest.getN() != null?chatRequest.getN():1)
                     .model(chatRequest.getModel() != null?chatRequest.getModel() : ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
                     .build();
-            if (chatRequest.getIsFunction()) {
+            if (chatRequest.getIsFunction() && !CollectionUtils.isEmpty(chatRequest.getFunctionNameList())) {
                 chatCompletion.setFunctions(gptFunctionFactory.getFunctionsByFunctionNameList(chatRequest.getFunctionNameList()));
                 chatCompletion.setFunctionCall("auto");
             }
@@ -232,8 +233,13 @@ public class ChatService {
         doStreamFunction(chatChoiceResult);
     }
 
-    public List<String> queryFunctionNameList(){
-        return gptFunctionFactory.getFunctions().stream().map(Functions::getName).collect(Collectors.toList());
+    public List<FunctionResponse> queryFunctionNameList(){
+        return gptFunctionFactory.getFunctions().stream().map(gptFunction -> {
+            FunctionResponse functionResponse = new FunctionResponse();
+            functionResponse.setFunctionName(gptFunction.getName());
+            functionResponse.setFunctionDefinition(gptFunction.getDescription());
+            return functionResponse;
+        }).collect(Collectors.toList());
     }
 
 }

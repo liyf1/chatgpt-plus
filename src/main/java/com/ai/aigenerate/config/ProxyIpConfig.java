@@ -6,11 +6,11 @@ import org.springframework.stereotype.Component;
 
 @Getter
 @Component
-public class BaiduYunKey {
+public class ProxyIpConfig {
 
-    @Value("${baidu.weather.accessKey:}")
-    private String weatherAccessKey;
+    @Value("${proxy.ip.signature:}")
+    private String signature;
 
-    @Value("${baidu.weather.secretKey:}")
-    private String weatherSecretKey;
+    @Value("${proxy.ip.secretId:}")
+    private String secretId;
 }

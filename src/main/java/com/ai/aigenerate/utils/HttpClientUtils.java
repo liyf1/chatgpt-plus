@@ -29,7 +29,7 @@ public class HttpClientUtils {
 
     static {
         // 设置请求和传输超时时间
-        requestConfig = RequestConfig.custom().setSocketTimeout(2000).setConnectTimeout(2000).build();
+        requestConfig = RequestConfig.custom().setSocketTimeout(30000).setConnectTimeout(30000).build();
     }
 
     /**
@@ -123,6 +123,12 @@ public class HttpClientUtils {
         return httpGet(url+"?"+paramsStr);
     }
 
+    public static String httpGetString(String url,Map paramMap){
+        String paramsStr = urlencode(paramMap);
+        return httpGetString(url+"?"+paramsStr);
+    }
+
+
     /**
      * 发送get请求
      *
@@ -155,6 +161,34 @@ public class HttpClientUtils {
             request.releaseConnection();
         }
         return jsonResult;
+    }
+
+    public static String httpGetString(String url) {
+        String strResult = "";
+        // get请求返回结果
+        CloseableHttpClient client = HttpClients.createDefault();
+        // 发送get请求
+        HttpGet request = new HttpGet(url);
+        request.setConfig(requestConfig);
+        try {
+            CloseableHttpResponse response = client.execute(request);
+
+            // 请求发送成功，并得到响应
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+                // 读取服务器返回过来的json字符串数据
+                HttpEntity entity = response.getEntity();
+                strResult = EntityUtils.toString(entity, "utf-8");
+                // 把json字符串转换成json对象
+                return strResult;
+            } else {
+                logger.error("get请求提交失败:" + url);
+            }
+        } catch (IOException e) {
+            logger.error("get请求提交失败:" + url, e);
+        } finally {
+            request.releaseConnection();
+        }
+        return strResult;
     }
 
     private static String urlencode(Map<String, String> data) {
