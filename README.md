@@ -18,11 +18,14 @@ To English Doc -> [English Doc](README_EN.md)
 <img width="433" alt="image" src="https://github.com/liyf1/chatgpt-plus/assets/49024327/9e6edb67-92ac-4fbe-8371-66bffb15bcc6">
 
 ### 目前已内置插件：
-- [x] 当前时间查询
-- [x] mid-journey图片生成
-- [x] 城市天气查询
-- [x] 新闻查询
-- [x] 邮件发送 
+- [✅] 当前时间查询
+- [✅] mid-journey图片生成
+- [✅] 城市天气查询
+- [✅] 新闻查询
+- [✅] 邮件发送
+- [✅] 微博热搜
+- [✅] 百度搜索 
+- [✅] 百度百科 
 - .
 - .
 - .
@@ -54,6 +57,15 @@ baidu.weather.secretKey =
 
 ## 新闻查询使用了聚合数据的接口，需要申请聚合数据的账号，然后创建应用，获取key，https://www.juhe.cn/docs/api/id/235
 juhe.news.key =
+
+## 项目中使用了动态IP获取实时数据，如需使用百度微博等功能需要配置 ，我使用的产品https://www.kuaidaili.com/doc/product/dps/#fetchtypeip
+proxy.ip.signature = 
+proxy.ip.secretId = 
+
+## 接口的权限验证，配置后请求中必须带有token，否则会认证失败
+chatgpt.api.token = 123456
+
+server.port = 15600
 ```
 ### 二、docker启动
 还未支持docker启动，很快会支持
