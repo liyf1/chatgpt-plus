@@ -1,18 +1,17 @@
 package com.ai.aigenerate.chat;
 
-import com.ai.aigenerate.utils.MdcUtil;
+import com.ai.aigenerate.utils.MdcUtils;
 import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.OpenAiStreamClient;
 import com.unfbx.chatgpt.entity.chat.*;
 import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
 
 @Slf4j
 public abstract class AbstractGptFunctionHandler<T> implements GptFunctionService<T> {
 
     public ChatChoice preHandle(ChatChoice chatChoice){
-        String requestId = MdcUtil.getTraceId();
+        String requestId = MdcUtils.getTraceId();
         Functions functions = getFunction();
         GptContext gptContext = ContextMap.get(requestId);
         OpenAiClient openAiClient = gptContext.getOpenAiClient();
@@ -41,7 +40,7 @@ public abstract class AbstractGptFunctionHandler<T> implements GptFunctionServic
     }
 
     public ChatChoice streamHandle(ChatChoice chatChoice){
-        String requestId = MdcUtil.getTraceId();
+        String requestId = MdcUtils.getTraceId();
         Functions functions = getFunction();
         GptStreamContext gptStreamContext = ContextMap.getStreamContext(requestId);
         ChatCompletion chatCompletion = gptStreamContext.getChatCompletion();

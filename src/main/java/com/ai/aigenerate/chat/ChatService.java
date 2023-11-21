@@ -1,28 +1,51 @@
 package com.ai.aigenerate.chat;
 
-import com.ai.aigenerate.config.GptFunctionConfig;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
+import com.ai.aigenerate.config.GptConfig;
+import com.ai.aigenerate.constant.VoiceContent;
 import com.ai.aigenerate.model.request.chat.ChatRequest;
 import com.ai.aigenerate.model.response.chat.ChatResponse;
 import com.ai.aigenerate.model.response.chat.FunctionResponse;
-import com.ai.aigenerate.utils.MdcUtil;
+import com.ai.aigenerate.utils.MdcUtils;
+import com.alibaba.fastjson.JSON;
 import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.OpenAiStreamClient;
+import com.unfbx.chatgpt.entity.Tts.TextToSpeech;
+import com.unfbx.chatgpt.entity.Tts.TtsFormat;
+import com.unfbx.chatgpt.entity.Tts.TtsVoice;
 import com.unfbx.chatgpt.entity.chat.*;
+import com.unfbx.chatgpt.entity.whisper.Translations;
+import com.unfbx.chatgpt.entity.whisper.Whisper;
+import com.unfbx.chatgpt.entity.whisper.WhisperResponse;
 import com.unfbx.chatgpt.function.KeyRandomStrategy;
 import com.unfbx.chatgpt.interceptor.DynamicKeyOpenAiAuthInterceptor;
 import com.unfbx.chatgpt.interceptor.OpenAILogger;
 import com.unfbx.chatgpt.interceptor.OpenAiResponseInterceptor;
 import jakarta.annotation.PostConstruct;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
+import okhttp3.ResponseBody;
 import okhttp3.logging.HttpLoggingInterceptor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -34,7 +57,7 @@ public class ChatService {
     private GptFunctionFactory gptFunctionFactory;
 
     @Autowired
-    private GptFunctionConfig gptFunctionConfig;
+    private GptConfig gptConfig;
 
     private OpenAiClient openAiClient;
 
@@ -50,13 +73,13 @@ public class ChatService {
                 .Builder()
                 .addInterceptor(httpLoggingInterceptor)
                 .addInterceptor(new OpenAiResponseInterceptor())
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
+                .connectTimeout(100, TimeUnit.SECONDS)
+                .writeTimeout(300, TimeUnit.SECONDS)
+                .readTimeout(300, TimeUnit.SECONDS)
                 .build();
         openAiClient = OpenAiClient.builder()
                 //支持多key传入，请求时候随机选择
-                .apiKey(gptFunctionConfig.getChatgptApiKey())
+                .apiKey(gptConfig.getChatgptApiKey())
                 //自定义key的获取策略：默认KeyRandomStrategy
                 .keyStrategy(new KeyRandomStrategy())
                 .authInterceptor(new DynamicKeyOpenAiAuthInterceptor())
@@ -64,7 +87,7 @@ public class ChatService {
                 .build();
         openAiStreamClient = OpenAiStreamClient.builder()
                 //支持多key传入，请求时候随机选择
-                .apiKey(gptFunctionConfig.getChatgptApiKey())
+                .apiKey(gptConfig.getChatgptApiKey())
                 //自定义key的获取策略：默认KeyRandomStrategy
                 .keyStrategy(new KeyRandomStrategy())
                 .authInterceptor(new DynamicKeyOpenAiAuthInterceptor())
@@ -74,8 +97,8 @@ public class ChatService {
 
     public ChatResponse chat(ChatRequest chatRequest){
         ChatResponse chatResponse = ChatResponse.builder().status("200").build();
-        String traceId = MdcUtil.generateTraceId();
-        MdcUtil.setTraceId(traceId);
+        String traceId = MdcUtils.generateTraceId();
+        MdcUtils.setTraceId(traceId);
         Message message = Message.builder().role(Message.Role.USER).content(chatRequest.getPrompt()).build();
         List<Message> messages = chatRequest.getMessages();
         if (messages == null)
@@ -85,13 +108,13 @@ public class ChatService {
             ChatCompletion chatCompletion = ChatCompletion
                     .builder()
                     .messages(messages)
-                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():8000)
+                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():4097)
                     .temperature(chatRequest.getTemperature() != null?chatRequest.getTemperature():0.2)
                     .topP(chatRequest.getTopP() != null?chatRequest.getTopP():1.0)
                     .n(chatRequest.getN() != null?chatRequest.getN():1)
                     .model(chatRequest.getModel() != null?chatRequest.getModel() : ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
                     .build();
-            if (chatRequest.getIsFunction()) {
+            if (chatRequest.getIsFunction() != null && chatRequest.getIsFunction()) {
                 chatCompletion.setFunctions(gptFunctionFactory.getFunctionsByFunctionNameList(chatRequest.getFunctionNameList()));
                 chatCompletion.setFunctionCall("auto");
             }
@@ -101,7 +124,7 @@ public class ChatService {
                     .openAiClient(openAiClient)
                     .chatCompletion(chatCompletion)
                     .requestId(chatRequest.getRequestId())
-                    .timeout(120000l)
+                    .timeout(1200000000l)
                     .build();
             ContextMap.put(traceId, gptContext);
             ChatCompletionResponse chatCompletionResponse = openAiClient.chatCompletion(chatCompletion);
@@ -113,9 +136,100 @@ public class ChatService {
             chatResponse.setStatus("500");
         } finally {
             ContextMap.remove(traceId);
-            MdcUtil.removeTraceId();
+            MdcUtils.removeTraceId();
         }
         return chatResponse;
+    }
+
+    public ChatResponse chatDefaultFunction(ChatRequest chatRequest){
+        ChatResponse chatResponse = ChatResponse.builder().status("200").build();
+        List<Message> messages = new ArrayList<>();
+        Message systemMessage = Message.builder().role(Message.Role.SYSTEM).content(gptConfig.getSystemPrompt()).build();
+        messages.add(systemMessage);
+        if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(chatRequest.getMessages())){
+            for (Message message1:chatRequest.getMessages()){
+                if (StringUtils.isNotBlank(message1.getContent())){
+                    messages.add(message1);
+                }
+            }
+        }
+        Message message = Message.builder().role(Message.Role.USER).content(chatRequest.getPrompt()).build();
+        messages.add(message);
+        String traceId = MdcUtils.generateTraceId();
+        try {
+            ChatCompletion chatCompletion = ChatCompletion
+                    .builder()
+                    .messages(messages)
+                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():8000)
+                    .temperature(chatRequest.getTemperature() != null?chatRequest.getTemperature():0.2)
+                    .topP(chatRequest.getTopP() != null?chatRequest.getTopP():1.0)
+                    .n(chatRequest.getN() != null?chatRequest.getN():1)
+                    .model(chatRequest.getModel() != null?chatRequest.getModel() : ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
+                    .build();
+            if (chatRequest.getIsFunction() != null && chatRequest.getIsFunction()) {
+                List<String> functionList = autoFindFunction(chatRequest);
+                if (!CollectionUtils.isEmpty(functionList)){
+                    chatCompletion.setFunctions(gptFunctionFactory.getFunctionsByFunctionNameList(functionList));
+                    chatCompletion.setFunctionCall("auto");
+                }
+            }
+            GptContext gptContext = GptContext.builder()
+                    .gptHandlerHistories(new ArrayList<>())
+                    .messages(messages)
+                    .openAiClient(openAiClient)
+                    .chatCompletion(chatCompletion)
+                    .requestId(chatRequest.getRequestId())
+                    .timeout(120000l)
+                    .build();
+            MdcUtils.setTraceId(traceId);
+            ContextMap.put(traceId, gptContext);
+            ChatCompletionResponse chatCompletionResponse = openAiClient.chatCompletion(chatCompletion);
+            String rs = doHandler(chatCompletionResponse.getChoices().get(0));
+            chatResponse.setResult(rs);
+            log.info("traceId:{},成功获取结果,调用链路：{}", traceId, gptContext.getGptHandlerHistories());
+        } catch (Exception e) {
+            log.error("traceId:{},调用chat接口异常", traceId, e);
+            chatResponse.setStatus("500");
+        } finally {
+            ContextMap.remove(traceId);
+            MdcUtils.removeTraceId();
+        }
+        return chatResponse;
+    }
+
+    private List<String> autoFindFunction(ChatRequest chatRequest) {
+
+        ChatRequest completionRequest = new ChatRequest();
+        List<Message> roleList = new ArrayList<>();
+        List<Functions> functions = gptFunctionFactory.getFunctions();
+        JSONArray jsonArray = new JSONArray();
+        for (Functions function:functions){
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.putOpt("函数名",function.getName());
+            jsonObject.putOpt("函数描述",function.getDescription());
+            jsonArray.add(jsonObject);
+        }
+        Message systemMessage = Message.builder().role(Message.Role.SYSTEM).content("你现在是一个函数判断器，这是我的要求\n" +
+                "1、请根据函数描述返回需要使用的函数\n" +
+                "2、必须用json返回结果，例如[\"queryWeather\",\"sendMail\"]，不要输出额外的内容，没有命中就返回空数组\n" +
+                "3、这是所有的函数定义："+jsonArray).build();
+        Message userMessage = Message.builder().role(Message.Role.USER).content("将上海天气发送给4198123131@qq.com").build();
+        Message assistantMessage = Message.builder().role(Message.Role.ASSISTANT).content("[\"queryWeather\",\"sendMail\"]").build();
+        Message userMessage1 = Message.builder().role(Message.Role.USER).content("你是谁").build();
+        Message assistantMessage1 = Message.builder().role(Message.Role.ASSISTANT).content("[]").build();
+        roleList.add(systemMessage);
+        roleList.add(userMessage);
+        roleList.add(assistantMessage);
+        roleList.add(userMessage1);
+        roleList.add(assistantMessage1);
+        completionRequest.setMessages(roleList);
+        completionRequest.setPrompt(chatRequest.getPrompt());
+        completionRequest.setRequestId(chatRequest.getRequestId());
+        completionRequest.setIsFunction(false);
+        completionRequest.setMaxTokens(12000);
+        completionRequest.setModel(ChatCompletion.Model.GPT_3_5_TURBO_16K.getName());
+        String result = chat(completionRequest).getResult();
+        return JSON.parseArray(result,String.class);
     }
 
     public String doHandler(ChatChoice chatChoice){
@@ -171,8 +285,8 @@ public class ChatService {
 
 
     public void chatStream(ChatRequest chatRequest, SseEmitter sseEmitter){
-        String traceId = MdcUtil.generateTraceId();
-        MdcUtil.setTraceId(traceId);
+        String traceId = MdcUtils.generateTraceId();
+        MdcUtils.setTraceId(traceId);
         FunctionEventSourceListener eventSourceListener = new FunctionEventSourceListener(sseEmitter);
         Message message = Message.builder().role(Message.Role.USER).content(chatRequest.getPrompt()).build();
         List<Message> messages = chatRequest.getMessages();
@@ -189,7 +303,7 @@ public class ChatService {
                     .n(chatRequest.getN() != null?chatRequest.getN():1)
                     .model(chatRequest.getModel() != null?chatRequest.getModel() : ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
                     .build();
-            if (chatRequest.getIsFunction() && !CollectionUtils.isEmpty(chatRequest.getFunctionNameList())) {
+            if (chatRequest.getIsFunction() != null && chatRequest.getIsFunction() && !CollectionUtils.isEmpty(chatRequest.getFunctionNameList())) {
                 chatCompletion.setFunctions(gptFunctionFactory.getFunctionsByFunctionNameList(chatRequest.getFunctionNameList()));
                 chatCompletion.setFunctionCall("auto");
             }
@@ -212,7 +326,7 @@ public class ChatService {
             log.error("traceId:{},异常：{}", traceId, e);
         }finally {
             ContextMap.remove(traceId);
-            MdcUtil.removeTraceId();
+            MdcUtils.removeTraceId();
             sseEmitter.complete();
         }
     }
@@ -242,4 +356,82 @@ public class ChatService {
         }).collect(Collectors.toList());
     }
 
+    public String speechToTextTranslations(File file) {
+        Translations translations = Translations.builder()
+                .model(Whisper.Model.WHISPER_1.getName())
+                .prompt("请你务必返回中文")
+                .temperature(0.2)
+                .responseFormat(Whisper.ResponseFormat.JSON.getName())
+                .build();
+        //语音转文字+翻译
+        WhisperResponse whisperResponse =
+                openAiClient.speechToTextTranslations(file, translations);
+        return whisperResponse.getText();
+    }
+
+    public File textToSpeed(String text) {
+        TextToSpeech textToSpeech = TextToSpeech.builder()
+                .model(TextToSpeech.Model.TTS_1.getName())
+                .input(text)
+                .voice(TtsVoice.NOVA.getName())
+                .responseFormat(TtsFormat.MP3.getName())
+                .build();
+        File file = new File(VoiceContent.TTS_PATH +Math.random()+".mp3");
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        openAiClient.textToSpeech(textToSpeech, new Callback<ResponseBody>() {
+            @SneakyThrows
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                InputStream inputStream = response.body().byteStream();
+                //创建文件
+                if (!file.exists()) {
+                    if (!file.getParentFile().exists())
+                        file.getParentFile().mkdir();
+                    try {
+                        file.createNewFile();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        log.error("createNewFile IOException");
+                    }
+                }
+
+                OutputStream os = null;
+                try {
+                    os = new BufferedOutputStream(new FileOutputStream(file));
+                    byte data[] = new byte[8192];
+                    int len;
+                    while ((len = inputStream.read(data, 0, 8192)) != -1) {
+                        os.write(data, 0, len);
+                    }
+                    countDownLatch.countDown();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        inputStream.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    try {
+                        if (os != null) {
+                            os.close();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+
+            }
+        });
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return file;
+    }
 }

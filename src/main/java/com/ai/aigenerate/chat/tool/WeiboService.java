@@ -132,7 +132,7 @@ public class WeiboService {
                         jsonObject.put("序号", rankEle.text());
                         String title = textEle.text().replaceAll(" ", "%20");
                         jsonObject.put("标题", textEle.text());
-                        jsonObject.put("链接地址", "https://s.weibo.com/weibo?q=%23" + title + "%23");
+                        jsonObject.put("链接地址", "https://s.weibo.com/weibo?q=" + title);
                         //1. 可以在中括号内加上任何想要删除的字符，实际上是一个正则表达式
                         String regExp = "[\n`~!@#$%^&*()+=|{}':;',\\[\\]<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。， 、？\uE652]";
                         //2. 这里是将特殊字符换为空字符串,""代表直接去掉

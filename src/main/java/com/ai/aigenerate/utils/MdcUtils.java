@@ -5,7 +5,7 @@ import org.slf4j.MDC;
 import java.util.Map;
 import java.util.UUID;
 
-public class MdcUtil {
+public class MdcUtils {
     public static final String TRACE_ID = "traceId";
 
     public static String generateTraceId() {

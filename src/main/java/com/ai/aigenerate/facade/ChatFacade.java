@@ -1,7 +1,9 @@
 package com.ai.aigenerate.facade;
 
+import com.ai.aigenerate.chat.LinkAiChatService;
 import com.ai.aigenerate.model.request.chat.ChatRequest;
 import com.ai.aigenerate.chat.ChatService;
+import com.ai.aigenerate.model.request.chat.LinkAiChatRequest;
 import com.ai.aigenerate.model.response.chat.ChatResponse;
 import com.ai.aigenerate.model.response.chat.FunctionResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,9 @@ public class ChatFacade {
     private ChatService chatService;
 
     @Autowired
+    private LinkAiChatService linkAiChatService;
+
+    @Autowired
     @Qualifier("streamThreadPool")
     private Executor executor;
 
@@ -39,13 +44,41 @@ public class ChatFacade {
     }
 
     @PostMapping("chatStream")
-    public SseEmitter queryTask(@RequestBody ChatRequest chatRequest){
+    public SseEmitter chatStream(@RequestBody ChatRequest chatRequest){
         if (chatRequest.getToken() == null || !chatRequest.getToken().equals(token)){
             throw new RuntimeException("token error");
         }
         SseEmitter sseEmitter = chatService.createSse(chatRequest.getRequestId());
         executor.execute(() -> {
             chatService.chatStream(chatRequest,sseEmitter);
+        });
+        return sseEmitter;
+    }
+
+    @PostMapping("auto/chat")
+    public ChatResponse chatDefaultFunction(@RequestBody ChatRequest chatRequest){
+        if (chatRequest.getToken() == null || !chatRequest.getToken().equals(token)){
+            throw new RuntimeException("token error");
+        }
+        return chatService.chatDefaultFunction(chatRequest);
+    }
+
+    @PostMapping("/knowledgeBase/chat")
+    public ChatResponse knowledgeBaseChat(@RequestBody LinkAiChatRequest chatRequest){
+        if (chatRequest.getToken() == null || !chatRequest.getToken().equals(token)){
+            throw new RuntimeException("token error");
+        }
+        return linkAiChatService.chat(chatRequest);
+    }
+
+    @PostMapping("/knowledgeBase/chatStream")
+    public SseEmitter knowledgeBaseChatStream(@RequestBody LinkAiChatRequest chatRequest){
+        if (chatRequest.getToken() == null || !chatRequest.getToken().equals(token)){
+            throw new RuntimeException("token error");
+        }
+        SseEmitter sseEmitter = linkAiChatService.createSse(chatRequest.getRequestId());
+        executor.execute(() -> {
+            linkAiChatService.chatStream(chatRequest,sseEmitter);
         });
         return sseEmitter;
     }

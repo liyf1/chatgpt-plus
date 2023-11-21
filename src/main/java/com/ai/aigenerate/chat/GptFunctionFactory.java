@@ -2,7 +2,7 @@ package com.ai.aigenerate.chat;
 
 import com.ai.aigenerate.model.request.chat.FunctionDefinition;
 import com.ai.aigenerate.utils.HttpClientUtils;
-import com.ai.aigenerate.utils.MdcUtil;
+import com.ai.aigenerate.utils.MdcUtils;
 import com.alibaba.fastjson.JSON;
 import com.unfbx.chatgpt.entity.chat.Functions;
 import jakarta.annotation.PostConstruct;
@@ -75,11 +75,11 @@ public class GptFunctionFactory {
             tempFunctionServiceMap.put(functionDefinition.getFunctions().getName(),tempService);
             gptFunctionServices.add(tempService);
         }
-        tempReqFunctionServiceMap.put(MdcUtil.getTraceId(),tempFunctionServiceMap);
+        tempReqFunctionServiceMap.put(MdcUtils.getTraceId(),tempFunctionServiceMap);
         return gptFunctionServices;
     }
 
     public GptFunctionService getGptFunctionServiceByTraceId(String functionName){
-        return tempReqFunctionServiceMap.get(MdcUtil.getTraceId()).get(functionName);
+        return tempReqFunctionServiceMap.get(MdcUtils.getTraceId()).get(functionName);
     }
 }

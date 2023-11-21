@@ -1,6 +1,6 @@
 package com.ai.aigenerate.chat.tool;
 
-import com.ai.aigenerate.config.GptFunctionConfig;
+import com.ai.aigenerate.config.GptConfig;
 import com.ai.aigenerate.constant.MjConstant;
 import com.ai.aigenerate.model.request.mj.CreateTaskRequest;
 import com.ai.aigenerate.model.response.mj.MjTaskResponse;
@@ -19,14 +19,14 @@ import java.util.concurrent.DelayQueue;
 public class MjService {
 
     @Autowired
-    private GptFunctionConfig gptFunctionConfig;
+    private GptConfig gptConfig;
 
     private DelayQueue<MjTaskDelayed> taskQueue = new DelayQueue<>();
 
     public MjTaskResponse createTextTask(String prompt){
         CreateTaskRequest createTaskRequest = new CreateTaskRequest();
         createTaskRequest.setPrompt(prompt);
-        JSONObject jsonObject = HttpClientUtils.httpPost(gptFunctionConfig.getMjServiceUrl()+ MjConstant.IMAGE_URL, JSON.toJSONString(createTaskRequest));
+        JSONObject jsonObject = HttpClientUtils.httpPost(gptConfig.getMjServiceUrl()+ MjConstant.IMAGE_URL, JSON.toJSONString(createTaskRequest));
         return JSONObject.toJavaObject(jsonObject, MjTaskResponse.class);
     }
 
@@ -34,7 +34,7 @@ public class MjService {
         if (StringUtils.isBlank(taskId)){
             return null;
         }
-        JSONObject jsonObject = HttpClientUtils.httpGet(gptFunctionConfig.getMjServiceUrl()+ MjConstant.QUERY_TASK_URL+taskId+ MjConstant.QUERY_TASK_URL_FETCH);
+        JSONObject jsonObject = HttpClientUtils.httpGet(gptConfig.getMjServiceUrl()+ MjConstant.QUERY_TASK_URL+taskId+ MjConstant.QUERY_TASK_URL_FETCH);
         return JSONObject.toJavaObject(jsonObject, QueryTaskResponse.class);
     }
 
@@ -42,7 +42,7 @@ public class MjService {
     public QueryTaskResponse addTask(String prompt){
         DelayQueue<MjTaskDelayed> taskQueue = new DelayQueue<>();
         MjTaskResponse mjTaskResponse = createTextTask(prompt);
-        MjTaskDelayed mjTaskDelayed = new MjTaskDelayed(mjTaskResponse.getResult(),  gptFunctionConfig.getMjServiceWaitTime());
+        MjTaskDelayed mjTaskDelayed = new MjTaskDelayed(mjTaskResponse.getResult(),  gptConfig.getMjServiceWaitTime());
         int maxAttempts = 5; // 最大重试次数
         int attempts = 0;
         while (attempts < maxAttempts) {
@@ -57,7 +57,7 @@ public class MjService {
                 return queryTaskResponse;
             }
 
-            mjTaskDelayed.resetDelay(gptFunctionConfig.getMjServiceWaitTime());
+            mjTaskDelayed.resetDelay(gptConfig.getMjServiceWaitTime());
             attempts++;
         }
 

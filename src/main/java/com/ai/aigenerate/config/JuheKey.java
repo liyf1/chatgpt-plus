@@ -8,6 +8,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class JuheKey {
 
-    @Value("${juhe.news.key}")
+    @Value("${juhe.news.key:}")
     private String newsKey;
 }

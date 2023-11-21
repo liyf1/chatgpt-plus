@@ -4,7 +4,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.ai.aigenerate.chat.FunctionEventSourceListener;
 import com.ai.aigenerate.chat.tool.MjService;
-import com.ai.aigenerate.config.GptFunctionConfig;
+import com.ai.aigenerate.config.GptConfig;
 import com.ai.aigenerate.model.request.mail.EmailRequest;
 import com.ai.aigenerate.model.request.mj.CreateTaskRequest;
 import com.ai.aigenerate.model.request.mail.ImageMail;
@@ -47,7 +47,7 @@ public class ChatGptService {
     private MjService mjService;
 
     @Autowired
-    private GptFunctionConfig gptFunctionConfig;
+    private GptConfig gptConfig;
 
     private OpenAiStreamClient openAiStreamClient;
 
@@ -67,7 +67,7 @@ public class ChatGptService {
                 .build();
         openAiClient = OpenAiClient.builder()
                 //支持多key传入，请求时候随机选择
-                .apiKey(gptFunctionConfig.getChatgptApiKey())
+                .apiKey(gptConfig.getChatgptApiKey())
                 //自定义key的获取策略：默认KeyRandomStrategy
                 .keyStrategy(new KeyRandomStrategy())
                 .authInterceptor(new DynamicKeyOpenAiAuthInterceptor())
@@ -76,7 +76,7 @@ public class ChatGptService {
                 .build();
         openAiStreamClient = OpenAiStreamClient.builder()
                 //支持多key传入，请求时候随机选择
-                .apiKey(gptFunctionConfig.getChatgptApiKey())
+                .apiKey(gptConfig.getChatgptApiKey())
                 //自定义key的获取策略：默认KeyRandomStrategy
                 .keyStrategy(new KeyRandomStrategy())
                 .authInterceptor(new DynamicKeyOpenAiAuthInterceptor())
