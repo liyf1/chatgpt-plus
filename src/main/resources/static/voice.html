@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实时语音交互页面</title>
+<style>
+    body, html {
+        height: 100%;
+        margin: 0;
+    }
+    body {
+        font-family: Arial, sans-serif;
+        /* 设置背景图片 */
+        background-image: url('https://img1.baidu.com/it/u=3285409119,3504542108&fm=253&app=120&size=w931&n=0&f=JPEG&fmt=auto?sec=1700326800&t=3ca787ca3f62f1a030d60dc888a384e4');
+        /* 让背景图片覆盖整个页面 */
+        background-size: cover;
+        /* 背景图片不会随着页面滚动而滚动 */
+        background-attachment: fixed;
+        /* 背景图片从页面左上角开始显示 */
+        background-position: top left;
+        /* 背景图片不重复 */
+        background-repeat: no-repeat;
+
+        /* 设置毛玻璃效果 */
+        backdrop-filter: blur(10px);
+        /* 毛玻璃效果的元素要有一定的背景色，这里设置为白色背景透明度为0.5 */
+        background-color: rgba(255, 255, 255, 0.5);
+
+        /* 需要设置宽高为100%来覆盖整个视口 */
+        width: 100%;
+        height: 100%;
+    }
+    #chat-box {
+        width: 100%;
+        height: 300px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        overflow-y: scroll;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-message {
+        max-width: 60%;
+        margin: 5px;
+        padding: 10px;
+        border-radius: 15px;
+        color: #fff;
+        line-height: 1.4;
+        font-size: 16px;
+    }
+    .user-message {
+        background-color: #007bff;
+        align-self: flex-end;
+    }
+    .bot-message {
+        background-color: #666;
+        align-self: flex-start;
+    }
+</style>
+</head>
+<body>
+<h1>语音聊天</h1>
+<audio id="audio-playback" controls></audio>
+<div>
+<button id="start-record-btn">开始录音</button>
+<button id="stop-record-btn" disabled>停止录音</button>
+</div>
+<div id="chat-box"></div>
+<script>
+// 检查浏览器是否支持录音功能
+if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert("您的浏览器不支持录音功能，请使用最新版   本的Chrome或Firefox。");
+}
+
+let audioStream;
+let mediaRecorder;
+const audioChunks = [];
+const conversationHistory = [];
+
+// 获取HTML元素
+const startRecordBtn = document.getElementById('start-record-btn');
+const stopRecordBtn = document.getElementById('stop-record-btn');
+const transcription = document.getElementById('transcription');
+const audioPlayback = document.getElementById('audio-playback');
+
+function addMessageToChat(sender, message) {
+    const chatBox = document.getElementById('chat-box');
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('chat-message', sender === 'user' ? 'user-message' : 'bot-message');
+    messageElement.textContent = message;
+    chatBox.appendChild(messageElement);
+    chatBox.scrollTop = chatBox.scrollHeight; // 自动滚动到最新消息
+}
+
+// 开始录音
+startRecordBtn.addEventListener('click', async () => {
+    try {
+        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(audioStream);
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+        };
+        mediaRecorder.onstop = sendAudioToServer;
+        mediaRecorder.start();
+        startRecordBtn.disabled = true;
+        stopRecordBtn.disabled = false;
+    } catch (error) {
+        console.error("录音失败: ", error);
+    }
+});
+
+// 停止录音
+stopRecordBtn.addEventListener('click', () => {
+    mediaRecorder.stop();
+    startRecordBtn.disabled = false;
+    stopRecordBtn.disabled = true;
+});
+
+// 发送音频到服务器并接收转换的文字
+const sendAudioToServer = () => {
+    const audioBlob = new Blob(audioChunks);
+    const formData = new FormData();
+    formData.append('audio', audioBlob);
+    formData.append('chatHistory', JSON.stringify( conversationHistory ));
+
+    fetch('http://localhost:15600/voice/upload-audio', { // 这里的URL应该是您的服务器端点
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        // 显示转换后的文字和音频
+        addMessageToChat('user', '您说：' + data.questionAsr);
+        addMessageToChat('bot', '机器回复：' + data.answerAsr);
+
+        conversationHistory.push({
+            question: data.questionAsr,
+            answer: data.answerAsr
+        });
+
+        // 解码Base64字符串
+        const audioBase64 = data.audio; // 这里假设后端返回的字段名为audio
+        const audioBlob = base64ToBlob(audioBase64, 'audio/mpeg');
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        // 使用audioUrl设置音频播放
+        const audioElement = document.getElementById('audio-playback');
+        audioElement.src = audioUrl;
+        audioElement.play();
+    })
+    .catch(error => {
+        console.error("错误: ", error);
+    });
+
+    // 清除录音片段，准备下一次录音
+    audioChunks.length = 0;
+};
+
+function base64ToBlob(base64, mimeType) {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], {type: mimeType});
+}
+
+</script>
+</body>
+</html>
+
