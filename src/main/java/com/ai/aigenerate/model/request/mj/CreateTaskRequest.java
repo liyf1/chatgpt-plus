@@ -12,4 +12,6 @@ public class CreateTaskRequest {
     private String prompt;
 
     private String state;
+
+    private String imageType;
 }

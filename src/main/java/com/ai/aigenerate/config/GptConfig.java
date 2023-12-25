@@ -27,6 +27,18 @@ public class GptConfig {
     @Value("${system.prompt:}")
     private String systemPrompt;
 
+    @Value("${tts.path:/Users/liyifan/Downloads/voice/}")
+    private String ttsPath;
+
+    @Value("${asr.path:/Users/liyifan/Downloads/asr/}")
+    private String asrPath;
+
+    @Value("${voice.api.token:6543213}")
+    private String voiceApiToken;
+
+    @Value("${voice.prompt.system:请使用中文交流，回答要求尽可能简短，不能超过100个字}")
+    private String voicePromptSystem;
+
     public Map<String,String> getLinkAiApiKeyMap(){
         Map<String,String> map = new HashMap<>();
         String[] split = linkAiApiKeyMap.split(",");

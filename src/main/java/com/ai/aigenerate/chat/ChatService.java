@@ -108,7 +108,7 @@ public class ChatService {
             ChatCompletion chatCompletion = ChatCompletion
                     .builder()
                     .messages(messages)
-                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():4097)
+                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():4096)
                     .temperature(chatRequest.getTemperature() != null?chatRequest.getTemperature():0.2)
                     .topP(chatRequest.getTopP() != null?chatRequest.getTopP():1.0)
                     .n(chatRequest.getN() != null?chatRequest.getN():1)
@@ -359,7 +359,7 @@ public class ChatService {
     public String speechToTextTranslations(File file) {
         Translations translations = Translations.builder()
                 .model(Whisper.Model.WHISPER_1.getName())
-                .prompt("请你务必返回中文")
+                .prompt("必须将结果翻译成中文返回")
                 .temperature(0.2)
                 .responseFormat(Whisper.ResponseFormat.JSON.getName())
                 .build();
@@ -369,14 +369,14 @@ public class ChatService {
         return whisperResponse.getText();
     }
 
-    public File textToSpeed(String text) {
+    public File textToSpeed(String text,String voice) {
         TextToSpeech textToSpeech = TextToSpeech.builder()
                 .model(TextToSpeech.Model.TTS_1.getName())
                 .input(text)
-                .voice(TtsVoice.NOVA.getName())
+                .voice(StringUtils.isNotBlank(voice)?voice:TtsVoice.NOVA.getName())
                 .responseFormat(TtsFormat.MP3.getName())
                 .build();
-        File file = new File(VoiceContent.TTS_PATH +Math.random()+".mp3");
+        File file = new File(gptConfig.getTtsPath() +Math.random()+".mp3");
         CountDownLatch countDownLatch = new CountDownLatch(1);
         openAiClient.textToSpeech(textToSpeech, new Callback<ResponseBody>() {
             @SneakyThrows

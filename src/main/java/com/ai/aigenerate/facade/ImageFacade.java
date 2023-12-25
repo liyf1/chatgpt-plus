@@ -1,7 +1,9 @@
 package com.ai.aigenerate.facade;
 
 import com.ai.aigenerate.chat.tool.AliyunDrawService;
+import com.ai.aigenerate.chat.tool.DallE3ImageService;
 import com.ai.aigenerate.chat.tool.MjService;
+import com.ai.aigenerate.chat.tool.MorningPaperService;
 import com.ai.aigenerate.chat.tool.StableDiffusionService;
 import com.ai.aigenerate.chat.tool.TranslateService;
 import com.ai.aigenerate.model.request.chat.DrawRequest;
@@ -27,11 +29,25 @@ public class ImageFacade {
     private MjService mjService;
 
     @Autowired
+    private MorningPaperService morningPaperService;
+
+    @Autowired
     private TranslateService translateService;
+
+    @Autowired
+    private DallE3ImageService dallE3ImageService;
+
+    @RequestMapping("zb")
+    public DrawImageResponse getZb(@RequestBody DrawRequest drawRequest){
+        String url = morningPaperService.getMorningPaper();
+        DrawImageResponse drawImageResponse = new DrawImageResponse();
+        drawImageResponse.setImageUrl(url);
+        return drawImageResponse;
+    }
 
     @RequestMapping("drawImage")
     public DrawImageResponse drawImage(@RequestBody DrawRequest drawRequest){
-        String url = aliyunDrawService.basicCall(drawRequest.getPrompt());
+        String url = dallE3ImageService.generateImage(drawRequest.getPrompt(),1).get(0);
         DrawImageResponse drawImageResponse = new DrawImageResponse();
         drawImageResponse.setImageUrl(url);
         return drawImageResponse;

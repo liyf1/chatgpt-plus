@@ -1,6 +1,7 @@
 package com.ai.aigenerate.facade;
 
 import com.ai.aigenerate.chat.ChatService;
+import com.ai.aigenerate.config.GptConfig;
 import com.ai.aigenerate.constant.VoiceContent;
 import com.ai.aigenerate.model.request.chat.ChatRequest;
 import com.ai.aigenerate.model.request.chat.ChatVoiceRequest;
@@ -34,18 +35,29 @@ public class VoiceFacade {
     @Autowired
     private ChatService chatService;
 
+    @Autowired
+    private GptConfig gptConfig;
+
     @PostMapping("/upload-audio")
-    public VoiceResponse handleAudioUpload(@RequestParam("audio") MultipartFile audioFile, @RequestParam("chatHistory") String chatHistoryStr, HttpServletResponse response) throws IOException {
+    public VoiceResponse handleAudioUpload(@RequestParam("audio") MultipartFile audioFile,@RequestParam("token") String token,@RequestParam("voice") String voice, @RequestParam("chatHistory") String chatHistoryStr, HttpServletResponse response) throws IOException {
+        if (token == null || !token.equals(gptConfig.getVoiceApiToken())){
+            throw new RuntimeException("token error");
+        }
         // 在这里处理上传的音频文件
         List<ChatVoiceRequest> chatVoiceRequests =  JSON.parseArray(chatHistoryStr, ChatVoiceRequest.class);
         // 可以将音频保存到服务器上的某个位置，或者执行其他操作
-        File file = new File(VoiceContent.ASR_PATH);
+        File file = new File(gptConfig.getAsrPath()+System.currentTimeMillis()+".mp3");
         BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(file));
         bufferedOutputStream.write(audioFile.getBytes());
         String questionAsr = chatService.speechToTextTranslations(file);
         ChatRequest chatRequest = new ChatRequest();
         chatRequest.setPrompt(questionAsr);
+        chatRequest.setModel("gpt-4-1106-preview");
         List<Message> messages = new ArrayList<>();
+        Message system = new Message();
+        system.setRole(Message.Role.SYSTEM.getName());
+        system.setContent(gptConfig.getVoicePromptSystem());
+        messages.add(system);
         for (ChatVoiceRequest chatVoiceRequest : chatVoiceRequests) {
             Message message = new Message();
             message.setRole(Message.Role.USER.getName());
@@ -61,11 +73,12 @@ public class VoiceFacade {
         VoiceResponse voiceResponse = new VoiceResponse();
         voiceResponse.setQuestionAsr(questionAsr);
         voiceResponse.setAnswerAsr(chatResponse.getResult());
-        File answerTts = chatService.textToSpeed(chatResponse.getResult());
+        File answerTts = chatService.textToSpeed(chatResponse.getResult(),voice);
         byte[] audioBytes = Files.readAllBytes(Paths.get(answerTts.getPath()));
         // 将音频字节编码为Base64字符串
         String audioBase64 = Base64.getEncoder().encodeToString(audioBytes);
         voiceResponse.setAudio(audioBase64);
+        bufferedOutputStream.close();
         response.addHeader("Access-Control-Allow-Origin", "*");
         response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
