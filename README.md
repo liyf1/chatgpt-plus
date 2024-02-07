@@ -68,7 +68,33 @@ chatgpt.api.token = 123456
 server.port = 15600
 ```
 ### 二、docker启动
-还未支持docker启动，很快会支持
+
+docker pull uswccr.ccs.tencentyun.com/liyf/images:chatgpt-plus-v1.0
+或者
+docker pull a419820659/liyf007:chatgpt-plus-v1.0
+
+```
+version: '3'
+services:
+  myapp:
+    image: chatgpt-plus-v1.0
+    ports:
+      - 15600:15600
+    environment:
+      - mj.service.url=http://xxxxx:8080
+      - chatgpt.api.key=sk-32131321ky8ph1231B2xxxxxvUqBX9
+      - mail.host=smtp.qq.com
+      - mail.port=465
+      - mail.username=xsds@qq.com
+      - mail.password=2312313
+      - mail.subject=AI Chatbot
+      - baidu.weather.accessKey=sds
+      - baidu.weather.secretKey=sds
+      - juhe.news.key=ds
+      - proxy.ip.signature=dsds
+      - proxy.ip.secretId=dsds
+      - chatgpt.api.token=123123
+```
 
 # 🙏 鸣谢
 项目中依赖了大佬的代码，在此表示感谢🌹：
