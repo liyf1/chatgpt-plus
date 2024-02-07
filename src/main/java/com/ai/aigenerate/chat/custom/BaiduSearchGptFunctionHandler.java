@@ -9,6 +9,7 @@ import com.alibaba.fastjson2.JSON;
 import com.unfbx.chatgpt.entity.chat.Functions;
 import com.unfbx.chatgpt.entity.chat.Parameters;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import java.util.Arrays;
 
@@ -17,6 +18,9 @@ public class BaiduSearchGptFunctionHandler extends AbstractGptFunctionHandler<Ba
 
     @Autowired
     private BaiduSearchService baiduSearchService;
+
+    @Value("${function.baidu.search.desc:根据关键词在网络上进行搜索查询，比如获取近况或者关键词的最新消息等，关键字不允许出现空格，搜索结果以json格式返回}")
+    private String baiduSearchFunctionDesc;
 
     @Override
     public String doHandle(String paramJson) {
@@ -39,7 +43,7 @@ public class BaiduSearchGptFunctionHandler extends AbstractGptFunctionHandler<Ba
                 .required(Arrays.asList("keyword")).build();
         Functions functions = Functions.builder()
                 .name("baiduSearch")
-                .description("通过百度进行搜索，关键字不允许出现空格，搜索结果以json格式返回")
+                .description(baiduSearchFunctionDesc)
                 .parameters(parameters)
                 .build();
         return functions;

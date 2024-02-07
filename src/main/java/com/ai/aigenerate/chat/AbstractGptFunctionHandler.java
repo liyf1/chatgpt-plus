@@ -24,7 +24,13 @@ public abstract class AbstractGptFunctionHandler<T> implements GptFunctionServic
             log.error("当前方法不匹配:{}", chatChoice.getMessage().getFunctionCall());
             return chatChoice;
         }
-        String result = doHandle(chatChoice.getMessage().getFunctionCall().getArguments());
+        String result;
+        try {
+            result = doHandle(chatChoice.getMessage().getFunctionCall().getArguments());
+        }catch (Exception e){
+            log.error("插件调用失败,chatChoice:{},errorMsg:{}",chatChoice,e);
+            result = "插件调用失败";
+        }
         FunctionCall functionCall = FunctionCall.builder()
                 .arguments(chatChoice.getMessage().getFunctionCall().getArguments())
                 .name(functions.getName())

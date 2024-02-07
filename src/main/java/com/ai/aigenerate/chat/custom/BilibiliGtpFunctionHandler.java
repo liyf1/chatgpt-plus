@@ -13,10 +13,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 
-@Component
+//@Component
 public class BilibiliGtpFunctionHandler extends AbstractGptFunctionHandler<BilibiliRequest> {
 
-    @Autowired
+    //@Autowired
     private BilibiliService bilibiliService;
 
     @Override

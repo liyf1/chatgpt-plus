@@ -1,9 +1,12 @@
 package com.ai.aigenerate.facade;
 
 import com.ai.aigenerate.chat.LinkAiChatService;
+import com.ai.aigenerate.chat.tool.CopyWritingService;
+import com.ai.aigenerate.chat.tool.CountDownHourService;
 import com.ai.aigenerate.model.request.chat.ChatRequest;
 import com.ai.aigenerate.chat.ChatService;
 import com.ai.aigenerate.model.request.chat.LinkAiChatRequest;
+import com.ai.aigenerate.model.response.BeCommonResponse;
 import com.ai.aigenerate.model.response.chat.ChatResponse;
 import com.ai.aigenerate.model.response.chat.FunctionResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +30,12 @@ public class ChatFacade {
 
     @Autowired
     private LinkAiChatService linkAiChatService;
+
+    @Autowired
+    private CountDownHourService countDownHourService;
+
+    @Autowired
+    private CopyWritingService copyWritingService;
 
     @Autowired
     @Qualifier("streamThreadPool")
@@ -86,5 +95,23 @@ public class ChatFacade {
     @GetMapping("queryFunction")
     public List<FunctionResponse> queryFunction(){
         return chatService.queryFunctionNameList();
+    }
+
+    @RequestMapping("countDownHour")
+    public BeCommonResponse countDownHour(){
+        String countDownHour = countDownHourService.countDownHour();
+        return BeCommonResponse.builder().result(countDownHour).build();
+    }
+
+    @RequestMapping("queryWord")
+    public BeCommonResponse queryWord(){
+       String word = countDownHourService.queryWord();
+        return BeCommonResponse.builder().result(word).build();
+    }
+
+    @RequestMapping("queryCrazyKfc")
+    public BeCommonResponse queryCrazyKfc(){
+        String fkc = copyWritingService.getKfcText();
+        return BeCommonResponse.builder().result(fkc).build();
     }
 }

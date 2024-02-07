@@ -70,13 +70,17 @@ public class WeiboService {
 
     @SneakyThrows
     public String getWeiboResult(String type){
-        String result = weiboCache.get(type);
-        if (StringUtils.isNotBlank(result)) {
-            return result;
-        }else {
-            weiboCache.refresh(type);
-            return weiboCache.get(type);
-        }
+        JSONObject jsonObject = HttpClientUtils.httpGet("https://zj.v.api.aa1.cn/api/weibo-rs/");
+        JSONArray data = jsonObject.getJSONArray("data");
+        return data.toString();
+
+//        String result = weiboCache.get(type);
+//        if (StringUtils.isNotBlank(result)) {
+//            return result;
+//        }else {
+//            weiboCache.refresh(type);
+//            return weiboCache.get(type);
+//        }
     }
 
     private String queryWeiboResult(String type) {

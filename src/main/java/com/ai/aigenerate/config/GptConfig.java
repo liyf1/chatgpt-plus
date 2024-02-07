@@ -12,7 +12,7 @@ import java.util.Map;
 @Component
 public class GptConfig {
 
-    @Value("${mj.service.url:}")
+    @Value("${mj.service.url:http://localhost:8080}")
     private String mjServiceUrl;
 
     @Value("${mj.service.waitTime:90000}")

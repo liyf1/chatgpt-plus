@@ -41,7 +41,7 @@ public class WeiboGptFunctionHandler extends AbstractGptFunctionHandler<WeiboReq
                 .required(Arrays.asList("num")).build();
         Functions functions = Functions.builder()
                 .name("weiboHotSearch")
-                .description("根据描述的类型获取微博热榜数据")
+                .description("获取微博热搜数据，必须提及微博热搜才进行调用")
                 .parameters(parameters)
                 .build();
         return functions;

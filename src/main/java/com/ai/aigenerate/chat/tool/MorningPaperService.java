@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 public class MorningPaperService {
 
     public String getMorningPaper() {
-        JSONObject jsonObject = HttpClientUtils.httpGet("http://dwz.2xb.cn/zaob");
-        String url = jsonObject.getString("imageUrl");
+        JSONObject jsonObject = HttpClientUtils.httpGet("http://api.suxun.site/api/sixs?type=json");
+        String url = jsonObject.getString("image");
         url = url.replace("https", "http");
         return url;
     }

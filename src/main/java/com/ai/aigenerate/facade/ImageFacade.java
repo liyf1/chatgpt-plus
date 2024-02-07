@@ -4,10 +4,12 @@ import com.ai.aigenerate.chat.tool.AliyunDrawService;
 import com.ai.aigenerate.chat.tool.DallE3ImageService;
 import com.ai.aigenerate.chat.tool.MjService;
 import com.ai.aigenerate.chat.tool.MorningPaperService;
+import com.ai.aigenerate.chat.tool.MoyuService;
 import com.ai.aigenerate.chat.tool.StableDiffusionService;
 import com.ai.aigenerate.chat.tool.TranslateService;
 import com.ai.aigenerate.model.request.chat.DrawRequest;
 import com.ai.aigenerate.model.request.stablediffusion.SdTextToImageRequest;
+import com.ai.aigenerate.model.response.BeCommonResponse;
 import com.ai.aigenerate.model.response.chat.DrawImageResponse;
 import com.ai.aigenerate.model.response.mj.QueryTaskResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,9 +39,20 @@ public class ImageFacade {
     @Autowired
     private DallE3ImageService dallE3ImageService;
 
+    @Autowired
+    private MoyuService moyuService;
+
     @RequestMapping("zb")
     public DrawImageResponse getZb(@RequestBody DrawRequest drawRequest){
         String url = morningPaperService.getMorningPaper();
+        DrawImageResponse drawImageResponse = new DrawImageResponse();
+        drawImageResponse.setImageUrl(url);
+        return drawImageResponse;
+    }
+
+    @RequestMapping("moyu")
+    public DrawImageResponse getMoyu(@RequestBody DrawRequest drawRequest){
+        String url = moyuService.getRelaxPaper();
         DrawImageResponse drawImageResponse = new DrawImageResponse();
         drawImageResponse.setImageUrl(url);
         return drawImageResponse;
@@ -71,5 +84,11 @@ public class ImageFacade {
         }
         drawImageResponse.setImageUrl(queryTaskResponse.getImageUrl());
         return drawImageResponse;
+    }
+
+    @RequestMapping("hs")
+    public BeCommonResponse getHsImage(){
+        String url = moyuService.getImage();
+        return BeCommonResponse.builder().result(url).build();
     }
 }
