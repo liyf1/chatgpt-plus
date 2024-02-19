@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -195,6 +196,88 @@ public class ChatService {
             MdcUtils.removeTraceId();
         }
         return chatResponse;
+    }
+
+    public void autoChatStream(ChatRequest chatRequest, SseEmitter sseEmitter){
+        String traceId = MdcUtils.generateTraceId();
+        MdcUtils.setTraceId(traceId);
+        FunctionEventSourceListener eventSourceListener = new FunctionEventSourceListener(sseEmitter);
+        Message message = Message.builder().role(Message.Role.USER).content(chatRequest.getPrompt()).build();
+        List<Message> messages = chatRequest.getMessages();
+        if (messages == null)
+            messages = new ArrayList<>();
+        messages.add(message);
+        try {
+            ChatCompletion chatCompletion = ChatCompletion
+                    .builder()
+                    .messages(messages)
+                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():2048)
+                    .temperature(chatRequest.getTemperature() != null?chatRequest.getTemperature():0.2)
+                    .topP(chatRequest.getTopP() != null?chatRequest.getTopP():1.0)
+                    .n(chatRequest.getN() != null?chatRequest.getN():1)
+                    .model(chatRequest.getModel() != null?chatRequest.getModel() : ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
+                    .build();
+            if (chatRequest.getIsFunction() != null && chatRequest.getIsFunction()) {
+                List<String> functionList = autoFindFunction(chatRequest);
+                if (!CollectionUtils.isEmpty(functionList)){
+                    chatCompletion.setFunctions(gptFunctionFactory.getFunctionsByFunctionNameList(functionList));
+                    chatCompletion.setFunctionCall("auto");
+                }
+            }
+            GptStreamContext gptStreamContext = GptStreamContext.builder()
+                    .gptHandlerHistories(new ArrayList<>())
+                    .messages(messages)
+                    .openAiStreamClient(openAiStreamClient)
+                    .chatCompletion(chatCompletion)
+                    .requestId(chatRequest.getRequestId())
+                    .functionEventSourceListener(eventSourceListener)
+                    .timeout(120000l)
+                    .build();
+            ContextMap.putStreamContext(traceId, gptStreamContext);
+            //todo
+            MdcUtils.setTraceId(traceId);
+            openAiStreamClient.streamChatCompletion(chatCompletion, eventSourceListener);
+            ChatChoice chatChoice = eventSourceListener.getChatChoice();
+            doStreamFunction(chatChoice);
+            log.info("traceId:{},成功获取结果,调用链路：{}", traceId, gptStreamContext.getGptHandlerHistories());
+            ContextMap.remove(traceId);
+        } catch (Exception e) {
+            log.error("traceId:{},异常：{}", traceId, e);
+        }finally {
+            ContextMap.remove(traceId);
+            MdcUtils.removeTraceId();
+            sseEmitter.complete();
+        }
+    }
+
+    public void pictureChatStream(ChatRequest chatRequest, SseEmitter sseEmitter){
+        String traceId = MdcUtils.generateTraceId();
+        MdcUtils.setTraceId(traceId);
+        FunctionEventSourceListener eventSourceListener = new FunctionEventSourceListener(sseEmitter);
+        Content textContent = Content.builder().text(chatRequest.getPrompt()).type(Content.Type.TEXT.getName()).build();
+        ImageUrl imageUrl = ImageUrl.builder().url(chatRequest.getImageUrl()).build();
+        Content imageContent = Content.builder().imageUrl(imageUrl).type(Content.Type.IMAGE_URL.getName()).build();
+        List<Content> contentList = new ArrayList<>();
+        contentList.add(textContent);
+        contentList.add(imageContent);
+        MessagePicture message = MessagePicture.builder().role(Message.Role.USER).content(contentList).build();
+        ChatCompletionWithPicture chatCompletion = ChatCompletionWithPicture
+                .builder()
+                .messages(Collections.singletonList(message))
+                .model(ChatCompletion.Model.GPT_4_VISION_PREVIEW.getName())
+                .build();
+        try {
+            openAiStreamClient.streamChatCompletion(chatCompletion, eventSourceListener);
+            ChatChoice chatChoice = eventSourceListener.getChatChoice();
+            doStreamFunction(chatChoice);
+            ContextMap.remove(traceId);
+        } catch (Exception e) {
+            log.error("traceId:{},异常：{}", traceId, e);
+        }finally {
+            ContextMap.remove(traceId);
+            MdcUtils.removeTraceId();
+            sseEmitter.complete();
+        }
     }
 
     private List<String> autoFindFunction(ChatRequest chatRequest) {

@@ -59,7 +59,27 @@ public class ChatFacade {
         }
         SseEmitter sseEmitter = chatService.createSse(chatRequest.getRequestId());
         executor.execute(() -> {
-            chatService.chatStream(chatRequest,sseEmitter);
+            if ("gpt-4-vision-preview".equals(chatRequest.getModel())) {
+                chatService.pictureChatStream(chatRequest, sseEmitter);
+            }else {
+                chatService.chatStream(chatRequest,sseEmitter);
+            }
+        });
+        return sseEmitter;
+    }
+
+    @PostMapping("auto/chatStream")
+    public SseEmitter autoChatStream(@RequestBody ChatRequest chatRequest){
+        if (chatRequest.getToken() == null || !chatRequest.getToken().equals(token)){
+            throw new RuntimeException("token error");
+        }
+        SseEmitter sseEmitter = chatService.createSse(chatRequest.getRequestId());
+        executor.execute(() -> {
+            if ("gpt-4-vision-preview".equals(chatRequest.getModel())) {
+                chatService.pictureChatStream(chatRequest, sseEmitter);
+            }else {
+                chatService.autoChatStream(chatRequest, sseEmitter);
+            }
         });
         return sseEmitter;
     }

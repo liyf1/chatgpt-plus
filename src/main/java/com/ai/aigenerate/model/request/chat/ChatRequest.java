@@ -31,4 +31,6 @@ public class ChatRequest {
 
     private String token;
 
+    private String imageUrl;
+
 }
