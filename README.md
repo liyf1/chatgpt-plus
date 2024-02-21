@@ -36,6 +36,7 @@ To English Doc -> [English Doc](README_EN.md)
 - [✅] 每日早报
 - [✅] 摸鱼日报
 - [todo] B站视频总结
+- [todo] 知识库引入，支持不同问题回复指定答案
 -   持续更新中
 
 # 🚀 快速开始
