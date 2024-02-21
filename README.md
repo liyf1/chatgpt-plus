@@ -1,5 +1,7 @@
 # chatgpt-plus
 
+To English Doc -> [English Doc](README_EN.md)
+
 # 📖 项目简介
 
 **ChatGPT自定义插件的客户端**
@@ -15,15 +17,25 @@
 #### 流式输出：
 <img width="433" alt="image" src="https://github.com/liyf1/chatgpt-plus/assets/49024327/9e6edb67-92ac-4fbe-8371-66bffb15bcc6">
 
+### 自动决策
+根据请求内容，内置决策模块自动识别需要使用的插件，无需指定对应的插件名，支持多个插件同时使用，例如:将北京的天气发送给4214142@gmail.com
+
 ### 目前已内置插件：
-- [x] 当前时间查询
-- [x] mid-journey图片生成
-- [x] 城市天气查询
-- [x] 新闻查询
-- [x] 邮件发送 
-- .
-- .
-- .
+- [✅] 当前时间查询
+- [✅] mid-journey图片生成
+- [✅] 城市天气查询
+- [✅] 新闻查询
+- [✅] 邮件发送
+- [✅] 微博热搜
+- [✅] 百度搜索
+- [✅] 百度百科
+- [✅] 谷歌搜索
+- [✅] 网页链接读取
+- [✅] AI每日技术资讯
+- [✅] DallE3图片生成
+- [✅] 每日早报
+- [✅] 摸鱼日报
+- [todo] B站视频总结
 -   持续更新中
 
 # 🚀 快速开始
@@ -52,9 +64,44 @@ baidu.weather.secretKey =
 
 ## 新闻查询使用了聚合数据的接口，需要申请聚合数据的账号，然后创建应用，获取key，https://www.juhe.cn/docs/api/id/235
 juhe.news.key =
+
+## 项目中使用了动态IP获取实时数据，如需使用百度微博等功能需要配置 ，我使用的产品https://www.kuaidaili.com/doc/product/dps/#fetchtypeip
+proxy.ip.signature = 
+proxy.ip.secretId = 
+
+## 接口的权限验证，配置后请求中必须带有token，否则会认证失败
+chatgpt.api.token = 123456
+
+server.port = 15600
 ```
 ### 二、docker启动
-还未支持docker启动，很快会支持
+
+docker pull uswccr.ccs.tencentyun.com/liyf/images:chatgpt-plus-v1.0
+或者
+docker pull a419820659/liyf007:chatgpt-plus-v1.0
+
+```
+version: '3'
+services:
+  myapp:
+    image: chatgpt-plus-v1.0
+    ports:
+      - 15600:15600
+    environment:
+      - mj.service.url=http://xxxxx:8080
+      - chatgpt.api.key=sk-32131321ky8ph1231B2xxxxxvUqBX9
+      - mail.host=smtp.qq.com
+      - mail.port=465
+      - mail.username=xsds@qq.com
+      - mail.password=2312313
+      - mail.subject=AI Chatbot
+      - baidu.weather.accessKey=sds
+      - baidu.weather.secretKey=sds
+      - juhe.news.key=ds
+      - proxy.ip.signature=dsds
+      - proxy.ip.secretId=dsds
+      - chatgpt.api.token=123123
+```
 
 # 🙏 鸣谢
 项目中依赖了大佬的代码，在此表示感谢🌹：
