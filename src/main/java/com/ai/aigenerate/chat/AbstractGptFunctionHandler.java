@@ -1,14 +1,20 @@
 package com.ai.aigenerate.chat;
 
+import com.ai.aigenerate.config.GptConfig;
 import com.ai.aigenerate.utils.MdcUtils;
 import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.OpenAiStreamClient;
 import com.unfbx.chatgpt.entity.chat.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import java.util.List;
 
 @Slf4j
 public abstract class AbstractGptFunctionHandler<T> implements GptFunctionService<T> {
+
+    @Autowired
+    private GptConfig gptConfig;
 
     public ChatChoice preHandle(ChatChoice chatChoice){
         String requestId = MdcUtils.getTraceId();
@@ -26,6 +32,9 @@ public abstract class AbstractGptFunctionHandler<T> implements GptFunctionServic
         }
         String result;
         try {
+            if (System.currentTimeMillis()-gptContext.getStartTime() > gptConfig.getChatFunctionTimeout()){
+                throw new IllegalArgumentException("函数调用超时");
+            }
             result = doHandle(chatChoice.getMessage().getFunctionCall().getArguments());
         }catch (Exception e){
             log.error("插件调用失败,chatChoice:{},errorMsg:{}",chatChoice,e);
@@ -60,7 +69,16 @@ public abstract class AbstractGptFunctionHandler<T> implements GptFunctionServic
         FunctionEventSourceListener functionEventSourceListener = gptStreamContext.getFunctionEventSourceListener();
         String args = chatChoice.getDelta().getFunctionCall().getArguments();
         log.info("构造的方法参数：{}", args);
-        String result = doHandle(args);
+        String result;
+        try {
+            if (System.currentTimeMillis()-gptStreamContext.getStartTime() > gptConfig.getChatFunctionTimeout()){
+                throw new IllegalArgumentException("函数调用超时");
+            }
+            result = doHandle(args);
+        }catch (Exception e){
+            log.error("插件调用失败,chatChoice:{},errorMsg:{}",chatChoice,e);
+            result = "插件调用失败";
+        }
         FunctionCall functionCall = FunctionCall.builder()
                 .arguments(args)
                 .name(functions.getName())

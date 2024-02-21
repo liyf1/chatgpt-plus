@@ -1,7 +1,7 @@
 package com.ai.aigenerate.chat.custom;
 
 import com.ai.aigenerate.chat.AbstractGptFunctionHandler;
-import com.ai.aigenerate.model.request.baidu.BaiduSearchRequest;
+import com.ai.aigenerate.model.request.baidu.SearchRequest;
 import com.ai.aigenerate.utils.HttpClientUtils;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson2.JSON;
@@ -12,13 +12,13 @@ import org.springframework.stereotype.Component;
 import java.util.Arrays;
 
 @Component
-public class BaiduGptFunctionHandler extends AbstractGptFunctionHandler<BaiduSearchRequest> {
+public class BaiduGptFunctionHandler extends AbstractGptFunctionHandler<SearchRequest> {
 
 
     @Override
     public String doHandle(String paramJson) {
-        BaiduSearchRequest baiduSearchRequest = JSON.parseObject(paramJson, BaiduSearchRequest.class);
-        String key = baiduSearchRequest.getKeyword().replace(" ","");
+        SearchRequest searchRequest = JSON.parseObject(paramJson, SearchRequest.class);
+        String key = searchRequest.getKeyword().replace(" ","");
         JSONObject jsonObject = HttpClientUtils.httpGet("https://baike.baidu.com/api/openapi/BaikeLemmaCardApi?scope=103&format=json&appid=379020&bk_key="+key+"&bk_length=600");
         return jsonObject.toJSONString();
     }

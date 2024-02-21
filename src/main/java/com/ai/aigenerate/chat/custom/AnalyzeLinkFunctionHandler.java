@@ -38,7 +38,7 @@ public class AnalyzeLinkFunctionHandler extends AbstractGptFunctionHandler<LinkR
                 .required(Arrays.asList("url")).build();
         Functions functions = Functions.builder()
                 .name("analyzeLink")
-                .description("根据给出的网址链接地址解析网页中的内容，以进行后续的分析")
+                .description("根据指定链接读取信息。当涉及实时资讯信息通过谷歌搜索后根据当前信息无法直接获取结果，选择最匹配的一个链接进行解析，以进行后续的分析")
                 .parameters(parameters)
                 .build();
         return functions;

@@ -3,7 +3,7 @@ package com.ai.aigenerate.chat;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import com.ai.aigenerate.config.GptConfig;
-import com.ai.aigenerate.constant.VoiceContent;
+import com.ai.aigenerate.constant.PromptContent;
 import com.ai.aigenerate.model.request.chat.ChatRequest;
 import com.ai.aigenerate.model.response.chat.ChatResponse;
 import com.ai.aigenerate.model.response.chat.FunctionResponse;
@@ -113,7 +113,7 @@ public class ChatService {
                     .temperature(chatRequest.getTemperature() != null?chatRequest.getTemperature():0.2)
                     .topP(chatRequest.getTopP() != null?chatRequest.getTopP():1.0)
                     .n(chatRequest.getN() != null?chatRequest.getN():1)
-                    .model(chatRequest.getModel() != null?chatRequest.getModel() : ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
+                    .model(chatRequest.getModel() != null?chatRequest.getModel() : "gpt-3.5-turbo-0125")
                     .build();
             if (chatRequest.getIsFunction() != null && chatRequest.getIsFunction()) {
                 chatCompletion.setFunctions(gptFunctionFactory.getFunctionsByFunctionNameList(chatRequest.getFunctionNameList()));
@@ -125,7 +125,8 @@ public class ChatService {
                     .openAiClient(openAiClient)
                     .chatCompletion(chatCompletion)
                     .requestId(chatRequest.getRequestId())
-                    .timeout(1200000000l)
+                    .timeout(gptConfig.getChatFunctionTimeout())
+                    .startTime(System.currentTimeMillis())
                     .build();
             ContextMap.put(traceId, gptContext);
             ChatCompletionResponse chatCompletionResponse = openAiClient.chatCompletion(chatCompletion);
@@ -161,11 +162,11 @@ public class ChatService {
             ChatCompletion chatCompletion = ChatCompletion
                     .builder()
                     .messages(messages)
-                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():8000)
+                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():4096)
                     .temperature(chatRequest.getTemperature() != null?chatRequest.getTemperature():0.2)
                     .topP(chatRequest.getTopP() != null?chatRequest.getTopP():1.0)
                     .n(chatRequest.getN() != null?chatRequest.getN():1)
-                    .model(chatRequest.getModel() != null?chatRequest.getModel() : ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
+                    .model(chatRequest.getModel() != null?chatRequest.getModel() : "gpt-3.5-turbo-0125")
                     .build();
             if (chatRequest.getIsFunction() != null && chatRequest.getIsFunction()) {
                 List<String> functionList = autoFindFunction(chatRequest);
@@ -180,7 +181,8 @@ public class ChatService {
                     .openAiClient(openAiClient)
                     .chatCompletion(chatCompletion)
                     .requestId(chatRequest.getRequestId())
-                    .timeout(120000l)
+                    .timeout(gptConfig.getChatFunctionTimeout())
+                    .startTime(System.currentTimeMillis())
                     .build();
             MdcUtils.setTraceId(traceId);
             ContextMap.put(traceId, gptContext);
@@ -211,11 +213,11 @@ public class ChatService {
             ChatCompletion chatCompletion = ChatCompletion
                     .builder()
                     .messages(messages)
-                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():2048)
+                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():4096)
                     .temperature(chatRequest.getTemperature() != null?chatRequest.getTemperature():0.2)
                     .topP(chatRequest.getTopP() != null?chatRequest.getTopP():1.0)
                     .n(chatRequest.getN() != null?chatRequest.getN():1)
-                    .model(chatRequest.getModel() != null?chatRequest.getModel() : ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
+                    .model(chatRequest.getModel() != null?chatRequest.getModel() : "gpt-3.5-turbo-0125")
                     .build();
             if (chatRequest.getIsFunction() != null && chatRequest.getIsFunction()) {
                 List<String> functionList = autoFindFunction(chatRequest);
@@ -231,7 +233,8 @@ public class ChatService {
                     .chatCompletion(chatCompletion)
                     .requestId(chatRequest.getRequestId())
                     .functionEventSourceListener(eventSourceListener)
-                    .timeout(120000l)
+                    .timeout(gptConfig.getChatFunctionTimeout())
+                    .startTime(System.currentTimeMillis())
                     .build();
             ContextMap.putStreamContext(traceId, gptStreamContext);
             //todo
@@ -268,8 +271,6 @@ public class ChatService {
                 .build();
         try {
             openAiStreamClient.streamChatCompletion(chatCompletion, eventSourceListener);
-            ChatChoice chatChoice = eventSourceListener.getChatChoice();
-            doStreamFunction(chatChoice);
             ContextMap.remove(traceId);
         } catch (Exception e) {
             log.error("traceId:{},异常：{}", traceId, e);
@@ -292,26 +293,16 @@ public class ChatService {
             jsonObject.putOpt("函数描述",function.getDescription());
             jsonArray.add(jsonObject);
         }
-        Message systemMessage = Message.builder().role(Message.Role.SYSTEM).content("你现在是一个函数判断器，这是我的要求\n" +
-                "1、请根据函数描述返回需要使用的函数\n" +
-                "2、必须用json返回结果，例如[\"queryWeather\",\"sendMail\"]，不要输出额外的内容，没有命中就返回空数组\n" +
-                "3、这是所有的函数定义："+jsonArray).build();
-        Message userMessage = Message.builder().role(Message.Role.USER).content("将上海天气发送给4198123131@qq.com").build();
-        Message assistantMessage = Message.builder().role(Message.Role.ASSISTANT).content("[\"queryWeather\",\"sendMail\"]").build();
-        Message userMessage1 = Message.builder().role(Message.Role.USER).content("你是谁").build();
-        Message assistantMessage1 = Message.builder().role(Message.Role.ASSISTANT).content("[]").build();
+        Message systemMessage = Message.builder().role(Message.Role.SYSTEM).content(PromptContent.autoStrategyPrompt).build();
         roleList.add(systemMessage);
-        roleList.add(userMessage);
-        roleList.add(assistantMessage);
-        roleList.add(userMessage1);
-        roleList.add(assistantMessage1);
         completionRequest.setMessages(roleList);
         completionRequest.setPrompt(chatRequest.getPrompt());
         completionRequest.setRequestId(chatRequest.getRequestId());
         completionRequest.setIsFunction(false);
-        completionRequest.setMaxTokens(12000);
-        completionRequest.setModel(ChatCompletion.Model.GPT_3_5_TURBO_16K.getName());
+        completionRequest.setMaxTokens(4096);
+        completionRequest.setModel("gpt-4-turbo-preview");
         String result = chat(completionRequest).getResult();
+        log.info("函数决策结果：{}",result);
         return JSON.parseArray(result,String.class);
     }
 
@@ -380,11 +371,11 @@ public class ChatService {
             ChatCompletion chatCompletion = ChatCompletion
                     .builder()
                     .messages(messages)
-                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():2048)
+                    .maxTokens(chatRequest.getMaxTokens() != null?chatRequest.getMaxTokens():4096)
                     .temperature(chatRequest.getTemperature() != null?chatRequest.getTemperature():0.2)
                     .topP(chatRequest.getTopP() != null?chatRequest.getTopP():1.0)
                     .n(chatRequest.getN() != null?chatRequest.getN():1)
-                    .model(chatRequest.getModel() != null?chatRequest.getModel() : ChatCompletion.Model.GPT_3_5_TURBO_16K_0613.getName())
+                    .model(chatRequest.getModel() != null?chatRequest.getModel() : "gpt-3.5-turbo-0125")
                     .build();
             if (chatRequest.getIsFunction() != null && chatRequest.getIsFunction() && !CollectionUtils.isEmpty(chatRequest.getFunctionNameList())) {
                 chatCompletion.setFunctions(gptFunctionFactory.getFunctionsByFunctionNameList(chatRequest.getFunctionNameList()));
@@ -397,7 +388,8 @@ public class ChatService {
                     .chatCompletion(chatCompletion)
                     .requestId(chatRequest.getRequestId())
                     .functionEventSourceListener(eventSourceListener)
-                    .timeout(120000l)
+                    .timeout(gptConfig.getChatFunctionTimeout())
+                    .startTime(System.currentTimeMillis())
                     .build();
             ContextMap.putStreamContext(traceId, gptStreamContext);
             openAiStreamClient.streamChatCompletion(chatCompletion, eventSourceListener);

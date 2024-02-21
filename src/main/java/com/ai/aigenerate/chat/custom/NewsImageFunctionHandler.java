@@ -1,27 +1,27 @@
 package com.ai.aigenerate.chat.custom;
 
 import com.ai.aigenerate.chat.AbstractGptFunctionHandler;
-import com.ai.aigenerate.chat.tool.CrawlerAiNewsService;
+import com.ai.aigenerate.chat.tool.MorningPaperService;
 import com.unfbx.chatgpt.entity.chat.Functions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AiNewsFunctionHandler extends AbstractGptFunctionHandler<Object> {
+public class NewsImageFunctionHandler extends AbstractGptFunctionHandler<Object> {
 
     @Autowired
-    private CrawlerAiNewsService crawlerAiNewsService;
+    private MorningPaperService morningPaperService;
 
     @Override
     public String doHandle(String paramJson) {
-        return crawlerAiNewsService.getAiNews();
+        return "{\"图片的链接\":\"" + morningPaperService.getMorningPaper() + "\"}";
     }
 
     @Override
     public Functions getFunction() {
         Functions functions = Functions.builder()
-                .name("getAiNews")
-                .description("获取当天人工智能技术的资讯信息")
+                .name("getNewsPicture")
+                .description("获取新闻早报的图片")
                 .build();
         return functions;
     }

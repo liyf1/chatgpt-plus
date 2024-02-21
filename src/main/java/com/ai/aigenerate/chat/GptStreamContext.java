@@ -19,8 +19,10 @@ public class GptStreamContext{
 
     private String requestId;
 
-    //todo 超时时间,毫秒
+    //超时时间,毫秒
     private Long timeout;
+
+    private Long startTime;
 
     private OpenAiStreamClient openAiStreamClient;
 

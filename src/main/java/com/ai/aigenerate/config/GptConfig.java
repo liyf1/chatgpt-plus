@@ -39,6 +39,9 @@ public class GptConfig {
     @Value("${voice.prompt.system:请使用中文交流，回答要求尽可能简短，不能超过100个字}")
     private String voicePromptSystem;
 
+    @Value("${chat.function.timeout:180000}")
+    private Long chatFunctionTimeout;
+
     public Map<String,String> getLinkAiApiKeyMap(){
         Map<String,String> map = new HashMap<>();
         String[] split = linkAiApiKeyMap.split(",");
